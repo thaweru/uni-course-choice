@@ -12,10 +12,64 @@
   --button-border: #7a93af;
   --button-text: #1f3550;
   --success: #2f6b2f;
+  --input-bg: #ffffff;
+  --hero-bg-top: #fafdff;
+  --hero-bg-bottom: #e4eef8;
+  --result-bg: #ffffff;
+  --pill-border: #afbfd0;
+  --pill-bg: #eef4fa;
+  --separator: #c5d3e0;
+  --empty-border: #9aaec4;
+  --page-mid: #eef4fb;
+  --input-border: #7f9db9;
+  --result-border: #b4c3d3;
+  --result-title: #003c7a;
+  --rank-color: #7a5a00;
+  --rank-bg: #fff8d8;
+  --score-bg: #edf8ed;
+  --button-hover-top: #ffffff;
+  --button-hover-bottom: #dbe7f4;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body[data-theme="dark"] {
+  --page-bg: #182331;
+  --page-edge: #0f1823;
+  --panel-bg: #223245;
+  --panel-border: #4d6683;
+  --panel-inset: #31465e;
+  --text: #e3edf7;
+  --muted: #b0c1d4;
+  --heading: #8fc2ff;
+  --button-top: #344c67;
+  --button-bottom: #26394d;
+  --button-border: #6c88a9;
+  --button-text: #f2f7fc;
+  --success: #9ce29c;
+  --input-bg: #15212e;
+  --hero-bg-top: #2a3d52;
+  --hero-bg-bottom: #203042;
+  --result-bg: #1c2a39;
+  --pill-border: #50677f;
+  --pill-bg: #293d52;
+  --separator: #405468;
+  --empty-border: #60758b;
+  --page-mid: #13202d;
+  --input-border: #6b86a5;
+  --result-border: #455b73;
+  --result-title: #a8d0ff;
+  --rank-color: #f0d17a;
+  --rank-bg: #4c3d16;
+  --score-bg: #244324;
+  --button-hover-top: #3d5875;
+  --button-hover-bottom: #2b4055;
 }
 
 body {
@@ -23,7 +77,7 @@ body {
   min-height: 100vh;
   font-family: Tahoma, Verdana, sans-serif;
   color: var(--text);
-  background: linear-gradient(180deg, var(--page-bg) 0%, #eef4fb 45%, var(--page-edge) 100%);
+  background: linear-gradient(180deg, var(--page-bg) 0%, var(--page-mid) 45%, var(--page-edge) 100%);
 }
 
 .app-shell {
@@ -42,7 +96,15 @@ body {
 .hero {
   padding: 18px;
   margin-bottom: 14px;
-  background: linear-gradient(180deg, #fafdff 0%, #e4eef8 100%);
+  background: linear-gradient(180deg, var(--hero-bg-top) 0%, var(--hero-bg-bottom) 100%);
+}
+
+.hero__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .hero__kicker,
@@ -108,8 +170,8 @@ label {
 
 input {
   width: 100%;
-  border: 1px solid #7f9db9;
-  background: #ffffff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
   color: var(--text);
   padding: 7px 8px;
   font-family: inherit;
@@ -127,11 +189,16 @@ button {
 
 button:hover,
 button:focus-visible {
-  background: linear-gradient(180deg, #ffffff 0%, #dbe7f4 100%);
+  background: linear-gradient(180deg, var(--button-hover-top) 0%, var(--button-hover-bottom) 100%);
 }
 
 button:active {
   box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle {
+  min-width: 170px;
+  white-space: nowrap;
 }
 
 .panel__heading {
@@ -140,7 +207,7 @@ button:active {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  border-bottom: 1px solid #c5d3e0;
+  border-bottom: 1px solid var(--separator);
   padding-bottom: 10px;
 }
 
@@ -151,8 +218,8 @@ button:active {
 }
 
 .result-card {
-  border: 1px solid #b4c3d3;
-  background: #ffffff;
+  border: 1px solid var(--result-border);
+  background: var(--result-bg);
   padding: 14px;
 }
 
@@ -166,7 +233,7 @@ button:active {
 
 .result-card h3 {
   margin: 0;
-  color: #003c7a;
+  color: var(--result-title);
   font-size: 20px;
   line-height: 1.2;
 }
@@ -181,14 +248,14 @@ button:active {
 }
 
 .rank-badge {
-  color: #7a5a00;
+  color: var(--rank-color);
   margin-bottom: 8px;
-  background: #fff8d8;
+  background: var(--rank-bg);
 }
 
 .score-badge {
   color: var(--success);
-  background: #edf8ed;
+  background: var(--score-bg);
 }
 
 .subject-list {
@@ -199,14 +266,14 @@ button:active {
 }
 
 .subject-pill {
-  border: 1px solid #afbfd0;
-  color: #2f4358;
+  border: 1px solid var(--pill-border);
+  color: var(--text);
   padding: 2px 8px;
-  background: #eef4fa;
+  background: var(--pill-bg);
 }
 
 .empty-state {
-  border: 1px dashed #9aaec4;
+  border: 1px dashed var(--empty-border);
   padding: 16px;
   color: var(--muted);
   text-align: center;
@@ -215,5 +282,9 @@ button:active {
 @media (max-width: 700px) {
   .app-shell {
     width: min(100% - 12px, 980px);
+  }
+
+  .theme-toggle {
+    width: 100%;
   }
 }

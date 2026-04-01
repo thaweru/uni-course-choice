@@ -40,6 +40,35 @@ const courses = [
 const form = document.querySelector("#search-form");
 const resultsNode = document.querySelector("#results");
 const summaryNode = document.querySelector("#result-summary");
+const themeToggle = document.querySelector("#theme-toggle");
+const themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+function getPreferredTheme() {
+  const savedTheme = window.localStorage.getItem("theme-preference");
+  if (savedTheme === "light" || savedTheme === "dark") {
+    return savedTheme;
+  }
+
+  return themeMedia.matches ? "dark" : "light";
+}
+
+function updateThemeToggle(theme, source) {
+  const nextTheme = theme === "dark" ? "Light" : "Dark";
+  themeToggle.textContent = `Switch to ${nextTheme} Mode`;
+  themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
+  themeToggle.title = source === "system" ? "Following system theme" : "Using saved theme preference";
+}
+
+function applyTheme(theme, source) {
+  document.body.dataset.theme = theme;
+  updateThemeToggle(theme, source);
+}
+
+function initializeTheme() {
+  const savedTheme = window.localStorage.getItem("theme-preference");
+  const theme = getPreferredTheme();
+  applyTheme(theme, savedTheme ? "saved" : "system");
+}
 
 function normalizeSubject(value) {
   return value.trim().toLowerCase();
@@ -120,4 +149,20 @@ form.addEventListener("submit", (event) => {
   runSearch();
 });
 
+themeToggle.addEventListener("click", () => {
+  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+  window.localStorage.setItem("theme-preference", nextTheme);
+  applyTheme(nextTheme, "saved");
+});
+
+themeMedia.addEventListener("change", (event) => {
+  const savedTheme = window.localStorage.getItem("theme-preference");
+  if (savedTheme) {
+    return;
+  }
+
+  applyTheme(event.matches ? "dark" : "light", "system");
+});
+
+initializeTheme();
 runSearch();
