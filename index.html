@@ -14,10 +14,10 @@
     <header class="hero">
       <div class="hero__top">
         <div>
-          <p class="hero__kicker">Retro Course Matcher v1.0</p>
-          <h1>Find Degrees by Score + Subjects</h1>
+          <p class="hero__kicker">District Cutoff Finder v2.0</p>
+          <h1>Find Suitable Courses by Score, Stream, and District</h1>
           <p class="hero__copy">
-            Enter your score and three subjects to generate a ranked list of matching university programs.
+            Choose your score, subject stream, and district to see programs where your score meets the district cutoff.
           </p>
         </div>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
@@ -31,22 +31,17 @@
       <form id="search-form" class="search-form">
         <label>
           Score
-          <input id="score" name="score" type="number" min="0" max="100" value="82" required>
+          <input id="score" name="score" type="number" min="0" step="0.001" value="1.850" required>
         </label>
 
         <label>
-          Subject 1
-          <input id="subject-1" name="subject1" type="text" value="Math" required>
+          Subject Stream
+          <select id="subject-stream" name="subjectStream" required></select>
         </label>
 
         <label>
-          Subject 2
-          <input id="subject-2" name="subject2" type="text" value="Physics" required>
-        </label>
-
-        <label>
-          Subject 3
-          <input id="subject-3" name="subject3" type="text" value="ICT" required>
+          District
+          <select id="district" name="district" required></select>
         </label>
 
         <button type="submit">Run Search</button>
@@ -62,6 +57,7 @@
     </section>
   </main>
 
+  <script src="course-data.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

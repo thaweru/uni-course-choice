@@ -1,164 +1,97 @@
 # Course Choice Finder
 
-This project is a small static website that helps a student compare their score and subjects against a predefined list of university programs. Everything runs in the browser. There is no backend, database, or API call.
+This project is a static browser app for checking which university programs are suitable for a student based on three inputs:
 
-## Files
+- score
+- subject stream
+- district
 
-- `index.html`: Defines the page layout, form inputs, results area, and theme toggle button.
-- `style.css`: Controls the retro-inspired layout, colors, responsive behavior, and light/dark theme variables.
-- `script.js`: Stores the course dataset and handles theme setup, form submission, ranking logic, and result rendering.
+The site compares the entered score against district-specific cutoff values stored in a separate data file.
 
-## How the Website Works
+## Project Files
 
-When the page loads, `script.js` does two things immediately:
+- `index.html`: Page structure, search form, results area, and theme toggle.
+- `style.css`: Layout, responsive styling, and light/dark theme variables.
+- `course-data.js`: Separate course table source.
+- `script.js`: Theme setup, table parsing, filter population, eligibility search, and result rendering.
 
-1. It initializes the theme with `initializeTheme()`.
-2. It runs a default search with `runSearch()` using the values already filled into the form.
+## Data File Format
 
-Because of this, the user sees ranked course cards as soon as the page opens.
+The course data is stored separately in `course-data.js` as a CSV-style table string assigned to `window.courseTableCsv`.
 
-## User Flow
-
-1. The user enters a score.
-2. The user enters three subjects.
-3. The user clicks `Run Search`.
-4. The form submit handler prevents a normal page refresh.
-5. The app calculates a match score for each course.
-6. Matching courses are sorted from best match to worst match.
-7. The results section is rebuilt with ranked course cards.
-
-## Course Data
-
-The available programs are stored in the `courses` array inside `script.js`.
-
-Each course object contains:
-
-- `title`: Name of the degree/program.
-- `minScore`: Recommended minimum score.
-- `subjects`: Subjects associated with that program.
-- `campus`: Institution name shown in the result card.
-
-To add or remove programs, edit the `courses` array.
-
-## Search and Ranking Logic
-
-The main search logic is handled by `runSearch()`.
-
-### Input Processing
-
-- The score is read from the `#score` input and converted to a number.
-- The three subject fields are collected into an array.
-- Each subject is normalized with `normalizeSubject()`, which trims whitespace and converts text to lowercase.
-- Empty subject values are removed.
-
-This normalization means entries like `Math`, ` math `, and `MATH` are treated the same.
-
-### Match Score Calculation
-
-Each course receives a numeric score from `computeMatchScore(course, studentScore, subjects)`.
-
-The formula is:
-
-- Subject match points: `20` points for each matching subject.
-- Score proximity points: `40 - abs(studentScore - course.minScore)`, with a minimum of `0`.
-- Eligibility bonus: `10` extra points if the student's score is greater than or equal to the course's `minScore`.
-
-So the total is:
+The table is expected to use this shape:
 
 ```text
-matchScore = scorePoints + subjectPoints + eligibilityBonus
+Subject,University,District 1,District 2,...,District 25
 ```
 
-### Filtering and Sorting
+Each row represents one program entry for one university. The district columns contain the cutoff score for that program in that district.
 
-After scores are calculated:
+Example row:
 
-- Courses with `matchScore <= 0` are removed.
-- The remaining courses are sorted by:
-  1. Higher `matchScore` first
-  2. Lower `minScore` first when scores are tied
+```text
+Physical Science,University of Colombo,1.940,1.915,...,1.684
+```
 
-This means the top-ranked result is the strongest overall match under the current scoring model.
+## How Search Works
 
-## Results Rendering
+When the page loads:
 
-`renderResults()` updates two parts of the page:
+1. The app initializes the saved or system theme.
+2. The app reads `window.courseTableCsv` from `course-data.js`.
+3. The CSV text is parsed into course rows.
+4. Subject stream and district dropdowns are populated from the parsed data.
+5. A search is run using the default form values.
 
-- `#result-summary`: Shows how many programs were ranked for the entered score.
-- `#results`: Displays one card per ranked program.
+## Search Logic
+
+The search form collects:
+
+- `score`
+- `subject stream`
+- `district`
+
+The app then:
+
+1. Filters the course table to rows where `Subject` matches the selected stream.
+2. Reads the cutoff from the selected district column.
+3. Marks a course as eligible if `score >= district cutoff`.
+4. Removes ineligible rows.
+5. Sorts eligible rows by higher district cutoff first.
+
+This means the highest ranked result is the most competitive eligible program in the selected stream and district.
+
+## Results
 
 Each result card shows:
 
-- Rank number
-- Course title
-- Campus/institution
-- Total match points
-- Subject tags
-- Recommended minimum score
+- rank
+- subject stream
+- university
+- selected district
+- district cutoff
+- entered score
+- margin above cutoff
 
-If no results remain after filtering, the app renders an empty-state message instead.
+If no courses are eligible, the app shows an empty-state message instead.
 
-## Theme System
+## Theme Behavior
 
-The light/dark theme behavior is handled entirely in the browser.
+The site still supports light and dark mode.
 
-### Initial Theme Choice
+- If the user has saved a theme preference in `localStorage`, that preference is used.
+- Otherwise, the site follows the system color scheme.
+- Clicking the theme button saves the chosen theme locally.
 
-`getPreferredTheme()` checks for a saved value in `localStorage` under the key `theme-preference`.
+## Updating the Course Table
 
-- If a saved value exists and is `light` or `dark`, that value is used.
-- Otherwise, the app follows the user's system theme through `prefers-color-scheme`.
+To replace the sample data:
 
-### Theme Toggle
+1. Open `course-data.js`.
+2. Replace the CSV rows inside `window.courseTableCsv`.
+3. Keep the header names as `Subject`, `University`, and `District 1` through `District 25`.
+4. Reload the page.
 
-When the user clicks the theme button:
+## Current Assumption
 
-- The theme flips between `light` and `dark`.
-- The new value is saved in `localStorage`.
-- `document.body.dataset.theme` is updated.
-- Button text and accessibility state are updated.
-
-### System Theme Changes
-
-If the user has not manually saved a theme, the site will respond to system theme changes in real time through a media query listener.
-
-## Styling and Layout
-
-The layout is built around:
-
-- `.app-shell` as the main page container
-- `.hero` for the top introduction area
-- `.panel` sections for inputs and results
-- `.result-card` for each ranked course
-
-The CSS uses custom properties for colors, which makes theme switching simple. The dark theme works by overriding those variables on `body[data-theme="dark"]`.
-
-The layout is also responsive:
-
-- The form uses CSS grid with auto-fitting columns.
-- The theme button becomes full width on smaller screens.
-- Cards wrap content when horizontal space is limited.
-
-## Current Technical Characteristics
-
-- Static frontend only
-- No external data loading
-- No form submission to a server
-- No client-side routing
-- No build step required
-
-You can run the site by opening `index.html` directly in a browser.
-
-## Customization Notes
-
-Common changes can be made here:
-
-- Add more courses: edit the `courses` array in `script.js`
-- Change ranking behavior: edit `computeMatchScore()` in `script.js`
-- Change default input values: edit the form input `value` attributes in `index.html`
-- Change colors or spacing: edit CSS variables and component rules in `style.css`
-- Change theme storage key or behavior: edit the theme functions in `script.js`
-
-## Limitation
-
-The recommendation system is based on a simple hardcoded scoring model. It does not validate real university admission rules, required subject combinations, or live course availability.
+The app currently treats the `Subject` column as the stream/category used by the search form. If your real dataset separates stream and course name into different columns, the parser and UI should be adjusted to reflect that schema.

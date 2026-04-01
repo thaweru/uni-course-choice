@@ -1,47 +1,14 @@
-const courses = [
-  {
-    title: "Computer Science",
-    minScore: 78,
-    subjects: ["Math", "Physics", "ICT"],
-    campus: "Metro Tech University"
-  },
-  {
-    title: "Software Engineering",
-    minScore: 80,
-    subjects: ["Math", "ICT", "English"],
-    campus: "National Digital Institute"
-  },
-  {
-    title: "Data Science",
-    minScore: 83,
-    subjects: ["Math", "Statistics", "ICT"],
-    campus: "Future Analytics College"
-  },
-  {
-    title: "Electrical Engineering",
-    minScore: 76,
-    subjects: ["Math", "Physics", "Chemistry"],
-    campus: "Central Engineering Faculty"
-  },
-  {
-    title: "Architecture",
-    minScore: 74,
-    subjects: ["Math", "Art", "Physics"],
-    campus: "City School of Design"
-  },
-  {
-    title: "Business Information Systems",
-    minScore: 70,
-    subjects: ["ICT", "Accounting", "Economics"],
-    campus: "Commerce and Tech Academy"
-  }
-];
-
 const form = document.querySelector("#search-form");
+const scoreInput = document.querySelector("#score");
+const streamSelect = document.querySelector("#subject-stream");
+const districtSelect = document.querySelector("#district");
 const resultsNode = document.querySelector("#results");
 const summaryNode = document.querySelector("#result-summary");
 const themeToggle = document.querySelector("#theme-toggle");
 const themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+let courseRows = [];
+let districtHeaders = [];
 
 function getPreferredTheme() {
   const savedTheme = window.localStorage.getItem("theme-preference");
@@ -70,30 +37,125 @@ function initializeTheme() {
   applyTheme(theme, savedTheme ? "saved" : "system");
 }
 
-function normalizeSubject(value) {
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    };
+
+    return entities[character];
+  });
+}
+
+function normalizeValue(value) {
   return value.trim().toLowerCase();
 }
 
-function computeMatchScore(course, studentScore, subjects) {
-  const subjectMatches = course.subjects.filter((subject) =>
-    subjects.includes(normalizeSubject(subject))
-  ).length;
+function parseCsvLine(line) {
+  const values = [];
+  let current = "";
+  let insideQuotes = false;
 
-  const scoreDistance = Math.abs(studentScore - course.minScore);
-  const scorePoints = Math.max(0, 40 - scoreDistance);
-  const subjectPoints = subjectMatches * 20;
-  const eligibilityBonus = studentScore >= course.minScore ? 10 : 0;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
 
-  return scorePoints + subjectPoints + eligibilityBonus;
+    if (character === "\"") {
+      const nextCharacter = line[index + 1];
+      if (insideQuotes && nextCharacter === "\"") {
+        current += "\"";
+        index += 1;
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+      continue;
+    }
+
+    if (character === "," && !insideQuotes) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function parseCourseTable(csvText) {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) {
+    return { rows: [], districts: [] };
+  }
+
+  const headers = parseCsvLine(lines[0]);
+  const subjectIndex = headers.indexOf("Subject");
+  const universityIndex = headers.indexOf("University");
+  const districts = headers.filter((header) => /^District\s+\d+$/i.test(header));
+
+  const rows = lines.slice(1).map((line) => {
+    const columns = parseCsvLine(line);
+    const districtCutoffs = {};
+
+    districts.forEach((district) => {
+      const districtIndex = headers.indexOf(district);
+      const value = Number.parseFloat(columns[districtIndex]);
+      districtCutoffs[district] = Number.isFinite(value) ? value : null;
+    });
+
+    return {
+      subject: columns[subjectIndex] || "",
+      university: columns[universityIndex] || "",
+      districtCutoffs
+    };
+  });
+
+  return { rows, districts };
+}
+
+function populateFilters() {
+  const streamOptions = [...new Set(courseRows.map((row) => row.subject).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right));
+
+  streamSelect.innerHTML = streamOptions
+    .map((stream, index) => {
+      const selected = index === 0 ? " selected" : "";
+      return `<option value="${escapeHtml(stream)}"${selected}>${escapeHtml(stream)}</option>`;
+    })
+    .join("");
+
+  districtSelect.innerHTML = districtHeaders
+    .map((district, index) => {
+      const selected = index === 0 ? " selected" : "";
+      return `<option value="${escapeHtml(district)}"${selected}>${escapeHtml(district)}</option>`;
+    })
+    .join("");
+}
+
+function getEligibilityStatus(score, cutoff) {
+  const difference = score - cutoff;
+  return {
+    difference,
+    isEligible: difference >= 0
+  };
 }
 
 function renderResults(resultSet, query) {
-  summaryNode.textContent = `${resultSet.length} programs ranked for score ${query.score}`;
+  summaryNode.textContent = `${resultSet.length} programs match ${query.stream} in ${query.district} for score ${query.score.toFixed(3)}`;
 
   if (!resultSet.length) {
     resultsNode.innerHTML = `
       <div class="empty-state">
-        No results found. Try different subjects or a different score.
+        No eligible programs were found for ${escapeHtml(query.stream)} in ${escapeHtml(query.district)} at score ${escapeHtml(query.score.toFixed(3))}.
       </div>
     `;
     return;
@@ -106,17 +168,17 @@ function renderResults(resultSet, query) {
           <div class="result-card__top">
             <div>
               <div class="rank-badge">Rank #${index + 1}</div>
-              <h3>${course.title}</h3>
-              <p class="result-meta">${course.campus}</p>
+              <h3>${escapeHtml(course.subject)}</h3>
+              <p class="result-meta">${escapeHtml(course.university)}</p>
             </div>
-            <div class="score-badge">${course.matchScore} pts</div>
+            <div class="score-badge">+${course.margin.toFixed(3)}</div>
           </div>
           <div class="subject-list">
-            ${course.subjects
-              .map((subject) => `<span class="subject-pill">${subject}</span>`)
-              .join("")}
+            <span class="subject-pill">${escapeHtml(query.district)}</span>
+            <span class="subject-pill">Cutoff ${course.cutoff.toFixed(3)}</span>
+            <span class="subject-pill">Your Score ${query.score.toFixed(3)}</span>
           </div>
-          <p class="result-meta">Recommended minimum score: ${course.minScore}</p>
+          <p class="result-meta">Eligible by ${course.margin.toFixed(3)} points above the district cutoff.</p>
         </article>
       `
     )
@@ -124,24 +186,66 @@ function renderResults(resultSet, query) {
 }
 
 function runSearch() {
-  const score = Number(document.querySelector("#score").value);
-  const subjects = [
-    document.querySelector("#subject-1").value,
-    document.querySelector("#subject-2").value,
-    document.querySelector("#subject-3").value
-  ]
-    .map(normalizeSubject)
-    .filter(Boolean);
+  const score = Number.parseFloat(scoreInput.value);
+  const selectedStream = streamSelect.value;
+  const selectedDistrict = districtSelect.value;
 
-  const rankedResults = courses
-    .map((course) => ({
-      ...course,
-      matchScore: computeMatchScore(course, score, subjects)
-    }))
-    .filter((course) => course.matchScore > 0)
-    .sort((a, b) => b.matchScore - a.matchScore || a.minScore - b.minScore);
+  if (!Number.isFinite(score) || !selectedStream || !selectedDistrict) {
+    summaryNode.textContent = "Enter a score, stream, and district to search.";
+    resultsNode.innerHTML = `
+      <div class="empty-state">
+        Enter valid search inputs to see eligible programs.
+      </div>
+    `;
+    return;
+  }
 
-  renderResults(rankedResults, { score, subjects });
+  const rankedResults = courseRows
+    .filter((course) => normalizeValue(course.subject) === normalizeValue(selectedStream))
+    .map((course) => {
+      const cutoff = course.districtCutoffs[selectedDistrict];
+      const eligibility = getEligibilityStatus(score, cutoff);
+
+      return {
+        ...course,
+        cutoff,
+        margin: eligibility.difference,
+        isEligible: eligibility.isEligible
+      };
+    })
+    .filter((course) => Number.isFinite(course.cutoff) && course.isEligible)
+    .sort((left, right) => right.cutoff - left.cutoff || left.university.localeCompare(right.university));
+
+  renderResults(rankedResults, {
+    score,
+    stream: selectedStream,
+    district: selectedDistrict
+  });
+}
+
+function initializeCourseData() {
+  const csvText = typeof window.courseTableCsv === "string" ? window.courseTableCsv : "";
+  const parsedTable = parseCourseTable(csvText);
+
+  courseRows = parsedTable.rows;
+  districtHeaders = parsedTable.districts;
+
+  if (!courseRows.length || !districtHeaders.length) {
+    summaryNode.textContent = "Course data could not be loaded.";
+    resultsNode.innerHTML = `
+      <div class="empty-state">
+        The course table is missing or invalid. Check the separate data file and reload the page.
+      </div>
+    `;
+    form.querySelector('button[type="submit"]').disabled = true;
+    streamSelect.disabled = true;
+    districtSelect.disabled = true;
+    scoreInput.disabled = true;
+    return;
+  }
+
+  populateFilters();
+  runSearch();
 }
 
 form.addEventListener("submit", (event) => {
@@ -165,4 +269,4 @@ themeMedia.addEventListener("change", (event) => {
 });
 
 initializeTheme();
-runSearch();
+initializeCourseData();
