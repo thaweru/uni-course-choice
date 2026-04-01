@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Choice Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <p class="hero__kicker">Retro Course Matcher v1.0</p>
+      <h1>Find Degrees by Score + Subjects</h1>
+      <p class="hero__copy">
+        Enter your score and three subjects to generate a ranked list of matching university programs.
+      </p>
+    </header>
+
+    <section class="panel panel--form" aria-labelledby="search-title">
+      <h2 id="search-title">Search Inputs</h2>
+      <form id="search-form" class="search-form">
+        <label>
+          Score
+          <input id="score" name="score" type="number" min="0" max="100" value="82" required>
+        </label>
+
+        <label>
+          Subject 1
+          <input id="subject-1" name="subject1" type="text" value="Math" required>
+        </label>
+
+        <label>
+          Subject 2
+          <input id="subject-2" name="subject2" type="text" value="Physics" required>
+        </label>
+
+        <label>
+          Subject 3
+          <input id="subject-3" name="subject3" type="text" value="ICT" required>
+        </label>
+
+        <button type="submit">Run Search</button>
+      </form>
+    </section>
+
+    <section class="panel panel--results" aria-labelledby="results-title">
+      <div class="panel__heading">
+        <h2 id="results-title">Search Results</h2>
+        <p id="result-summary" class="result-summary"></p>
+      </div>
+      <div id="results" class="results" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
