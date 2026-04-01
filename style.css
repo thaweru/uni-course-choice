@@ -1,14 +1,17 @@
 :root {
-  --bg: #120b2e;
-  --bg-alt: #24114d;
-  --panel: #1f153f;
-  --panel-border: #ff9f1c;
-  --text: #f7f3e9;
-  --muted: #8fe3cf;
-  --accent: #ff4f87;
-  --accent-2: #ffd166;
-  --success: #6ef3a5;
-  --shadow: #090411;
+  --page-bg: #dbe6f2;
+  --page-edge: #b8c7d9;
+  --panel-bg: #f7fbff;
+  --panel-border: #8ea7c2;
+  --panel-inset: #ffffff;
+  --text: #213042;
+  --muted: #54687d;
+  --heading: #1d4f91;
+  --button-top: #f8fbff;
+  --button-bottom: #cedced;
+  --button-border: #7a93af;
+  --button-text: #1f3550;
+  --success: #2f6b2f;
 }
 
 * {
@@ -18,61 +21,51 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "VT323", monospace;
+  font-family: Tahoma, Verdana, sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top, rgba(255, 79, 135, 0.25), transparent 30%),
-    linear-gradient(180deg, #2d145d 0%, #120b2e 50%, #090411 100%);
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.06) 50%, transparent 50%),
-    linear-gradient(90deg, rgba(143, 227, 207, 0.04), rgba(255, 79, 135, 0.04), rgba(255, 209, 102, 0.04));
-  background-size: 100% 4px, 100% 100%;
-  mix-blend-mode: screen;
-  opacity: 0.4;
+  background: linear-gradient(180deg, var(--page-bg) 0%, #eef4fb 45%, var(--page-edge) 100%);
 }
 
 .app-shell {
-  width: min(1080px, calc(100% - 2rem));
+  width: min(980px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 2rem 0 4rem;
+  padding: 18px 0 32px;
 }
 
 .hero,
 .panel {
-  border: 4px solid var(--panel-border);
-  background: var(--panel);
-  box-shadow: 10px 10px 0 var(--shadow);
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: inset 1px 1px 0 var(--panel-inset);
 }
 
 .hero {
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 18px;
+  margin-bottom: 14px;
+  background: linear-gradient(180deg, #fafdff 0%, #e4eef8 100%);
 }
 
 .hero__kicker,
 h1,
 h2,
 button {
-  font-family: "Press Start 2P", cursive;
+  font-family: Tahoma, Verdana, sans-serif;
 }
 
 .hero__kicker {
-  margin: 0 0 1rem;
-  color: var(--accent-2);
-  font-size: 0.7rem;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 h1 {
-  margin: 0 0 1rem;
-  font-size: clamp(1.2rem, 2vw + 0.7rem, 2rem);
-  line-height: 1.5;
+  margin: 0 0 10px;
+  color: var(--heading);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.2;
 }
 
 .hero__copy,
@@ -82,130 +75,145 @@ h1 {
 label,
 input,
 .empty-state {
-  font-size: clamp(1.2rem, 1.3vw + 0.8rem, 1.75rem);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .panel {
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+h2 {
+  margin: 0 0 14px;
+  color: var(--heading);
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .search-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
   align-items: end;
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  color: var(--muted);
+  gap: 6px;
+  color: var(--text);
+  font-weight: bold;
 }
 
 input {
   width: 100%;
-  border: 3px solid var(--accent-2);
-  background: #fff7df;
-  color: #1a1333;
-  padding: 0.7rem 0.8rem;
+  border: 1px solid #7f9db9;
+  background: #ffffff;
+  color: var(--text);
+  padding: 7px 8px;
   font-family: inherit;
 }
 
 button {
-  border: 3px solid var(--accent);
-  background: var(--accent-2);
-  color: #1a1333;
-  padding: 0.9rem 1rem;
+  border: 1px solid var(--button-border);
+  background: linear-gradient(180deg, var(--button-top) 0%, var(--button-bottom) 100%);
+  color: var(--button-text);
+  padding: 8px 12px;
   cursor: pointer;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: bold;
 }
 
 button:hover,
 button:focus-visible {
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--accent);
+  background: linear-gradient(180deg, #ffffff 0%, #dbe7f4 100%);
+}
+
+button:active {
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .panel__heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 12px;
   flex-wrap: wrap;
+  border-bottom: 1px solid #c5d3e0;
+  padding-bottom: 10px;
 }
 
 .results {
   display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .result-card {
-  border: 3px solid #8fe3cf;
-  background: linear-gradient(180deg, rgba(143, 227, 207, 0.12), rgba(255, 255, 255, 0.02));
-  padding: 1rem;
+  border: 1px solid #b4c3d3;
+  background: #ffffff;
+  padding: 14px;
 }
 
 .result-card__top {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 12px;
   align-items: start;
   flex-wrap: wrap;
 }
 
 .result-card h3 {
   margin: 0;
-  font-size: clamp(1.2rem, 1.1vw + 0.9rem, 1.8rem);
+  color: #003c7a;
+  font-size: 20px;
+  line-height: 1.2;
 }
 
 .rank-badge,
 .score-badge {
   display: inline-block;
-  border: 2px solid currentColor;
-  padding: 0.25rem 0.5rem;
+  border: 1px solid currentColor;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .rank-badge {
-  color: var(--accent-2);
-  margin-bottom: 0.5rem;
+  color: #7a5a00;
+  margin-bottom: 8px;
+  background: #fff8d8;
 }
 
 .score-badge {
   color: var(--success);
-  font-size: clamp(1.1rem, 1vw + 0.8rem, 1.6rem);
+  background: #edf8ed;
 }
 
 .subject-list {
   display: flex;
-  gap: 0.6rem;
+  gap: 8px;
   flex-wrap: wrap;
-  margin: 0.75rem 0;
+  margin: 10px 0;
 }
 
 .subject-pill {
-  border: 2px solid var(--accent);
-  color: #fff7df;
-  padding: 0.2rem 0.6rem;
-  background: rgba(255, 79, 135, 0.12);
+  border: 1px solid #afbfd0;
+  color: #2f4358;
+  padding: 2px 8px;
+  background: #eef4fa;
 }
 
 .empty-state {
-  border: 3px dashed var(--accent);
-  padding: 1rem;
+  border: 1px dashed #9aaec4;
+  padding: 16px;
   color: var(--muted);
   text-align: center;
 }
 
 @media (max-width: 700px) {
   .app-shell {
-    width: min(100% - 1rem, 1080px);
-  }
-
-  .hero,
-  .panel {
-    box-shadow: 6px 6px 0 var(--shadow);
+    width: min(100% - 12px, 980px);
   }
 }
