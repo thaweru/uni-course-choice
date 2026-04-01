@@ -98,7 +98,8 @@ function parseCourseTable(csvText) {
   }
 
   const headers = parseCsvLine(lines[0]);
-  const subjectIndex = headers.indexOf("Subject");
+  const streamIndex = headers.indexOf("Stream");
+  const courseIndex = headers.indexOf("Course");
   const universityIndex = headers.indexOf("University");
   const districts = headers.filter((header) => /^District\s+\d+$/i.test(header));
 
@@ -113,7 +114,8 @@ function parseCourseTable(csvText) {
     });
 
     return {
-      subject: columns[subjectIndex] || "",
+      stream: columns[streamIndex] || "",
+      course: columns[courseIndex] || "",
       university: columns[universityIndex] || "",
       districtCutoffs
     };
@@ -123,7 +125,7 @@ function parseCourseTable(csvText) {
 }
 
 function populateFilters() {
-  const streamOptions = [...new Set(courseRows.map((row) => row.subject).filter(Boolean))]
+  const streamOptions = [...new Set(courseRows.map((row) => row.stream).filter(Boolean))]
     .sort((left, right) => left.localeCompare(right));
 
   streamSelect.innerHTML = streamOptions
@@ -168,12 +170,13 @@ function renderResults(resultSet, query) {
           <div class="result-card__top">
             <div>
               <div class="rank-badge">Rank #${index + 1}</div>
-              <h3>${escapeHtml(course.subject)}</h3>
+              <h3>${escapeHtml(course.course)}</h3>
               <p class="result-meta">${escapeHtml(course.university)}</p>
             </div>
             <div class="score-badge">+${course.margin.toFixed(3)}</div>
           </div>
           <div class="subject-list">
+            <span class="subject-pill">${escapeHtml(course.stream)}</span>
             <span class="subject-pill">${escapeHtml(query.district)}</span>
             <span class="subject-pill">Cutoff ${course.cutoff.toFixed(3)}</span>
             <span class="subject-pill">Your Score ${query.score.toFixed(3)}</span>
@@ -201,7 +204,7 @@ function runSearch() {
   }
 
   const rankedResults = courseRows
-    .filter((course) => normalizeValue(course.subject) === normalizeValue(selectedStream))
+    .filter((course) => normalizeValue(course.stream) === normalizeValue(selectedStream))
     .map((course) => {
       const cutoff = course.districtCutoffs[selectedDistrict];
       const eligibility = getEligibilityStatus(score, cutoff);

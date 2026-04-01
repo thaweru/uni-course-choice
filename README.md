@@ -22,7 +22,7 @@ The course data is stored separately in `course-data.js` as a CSV-style table st
 The table is expected to use this shape:
 
 ```text
-Subject,University,District 1,District 2,...,District 25
+Stream,Course,University,District 1,District 2,...,District 25
 ```
 
 Each row represents one program entry for one university. The district columns contain the cutoff score for that program in that district.
@@ -30,7 +30,7 @@ Each row represents one program entry for one university. The district columns c
 Example row:
 
 ```text
-Physical Science,University of Colombo,1.940,1.915,...,1.684
+Physical Science,Computer Science,University of Colombo,1.940,1.915,...,1.684
 ```
 
 ## How Search Works
@@ -53,7 +53,7 @@ The search form collects:
 
 The app then:
 
-1. Filters the course table to rows where `Subject` matches the selected stream.
+1. Filters the course table to rows where `Stream` matches the selected stream.
 2. Reads the cutoff from the selected district column.
 3. Marks a course as eligible if `score >= district cutoff`.
 4. Removes ineligible rows.
@@ -66,7 +66,8 @@ This means the highest ranked result is the most competitive eligible program in
 Each result card shows:
 
 - rank
-- subject stream
+- course
+- stream
 - university
 - selected district
 - district cutoff
@@ -89,9 +90,5 @@ To replace the sample data:
 
 1. Open `course-data.js`.
 2. Replace the CSV rows inside `window.courseTableCsv`.
-3. Keep the header names as `Subject`, `University`, and `District 1` through `District 25`.
+3. Keep the header names as `Stream`, `Course`, `University`, and `District 1` through `District 25`.
 4. Reload the page.
-
-## Current Assumption
-
-The app currently treats the `Subject` column as the stream/category used by the search form. If your real dataset separates stream and course name into different columns, the parser and UI should be adjusted to reflect that schema.
