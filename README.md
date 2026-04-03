@@ -22,7 +22,7 @@ The course data is stored separately in `course-data.js` as a CSV-style table st
 The table is expected to use this shape:
 
 ```text
-Stream,Course,University,District 1,District 2,...,District 25
+Stream,Course,University,COLOMBO,GAMPAHA,...,RATNAPURA
 ```
 
 Each row represents one program entry for one university. The district columns contain the cutoff score for that program in that district.
@@ -90,5 +90,5 @@ To replace the sample data:
 
 1. Open `course-data.js`.
 2. Replace the CSV rows inside `window.courseTableCsv`.
-3. Keep the header names as `Stream`, `Course`, `University`, and `District 1` through `District 25`.
+3. Keep the header names as `Stream`, `Course`, and `University`. Every remaining column is treated as a district, using the exact header text as the dropdown label.
 4. Reload the page.

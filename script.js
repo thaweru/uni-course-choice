@@ -55,6 +55,10 @@ function normalizeValue(value) {
   return value.trim().toLowerCase();
 }
 
+function findHeaderIndex(headers, expectedName) {
+  return headers.findIndex((header) => normalizeValue(header) === normalizeValue(expectedName));
+}
+
 function parseCsvLine(line) {
   const values = [];
   let current = "";
@@ -98,10 +102,15 @@ function parseCourseTable(csvText) {
   }
 
   const headers = parseCsvLine(lines[0]);
-  const streamIndex = headers.indexOf("Stream");
-  const courseIndex = headers.indexOf("Course");
-  const universityIndex = headers.indexOf("University");
-  const districts = headers.filter((header) => /^District\s+\d+$/i.test(header));
+  const streamIndex = findHeaderIndex(headers, "Stream");
+  const courseIndex = findHeaderIndex(headers, "Course");
+  const universityIndex = findHeaderIndex(headers, "University");
+
+  if ([streamIndex, courseIndex, universityIndex].some((index) => index < 0)) {
+    return { rows: [], districts: [] };
+  }
+
+  const districts = headers.filter((_, index) => ![streamIndex, courseIndex, universityIndex].includes(index));
 
   const rows = lines.slice(1).map((line) => {
     const columns = parseCsvLine(line);
