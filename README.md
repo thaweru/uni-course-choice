@@ -53,7 +53,7 @@ The search form collects:
 
 The app then:
 
-1. Filters the course table to rows where `Stream` matches the selected stream.
+1. Filters the course table to rows where `Stream` matches the selected stream, and also includes rows where the stream is blank or marked as `Common`/`Common Stream`.
 2. Reads the cutoff from the selected district column.
 3. Marks a course as eligible if `score >= district cutoff`.
 4. Removes ineligible rows.

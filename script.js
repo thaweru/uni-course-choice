@@ -55,6 +55,19 @@ function normalizeValue(value) {
   return value.trim().toLowerCase();
 }
 
+function getDisplayStreamName(stream) {
+  return stream.trim() || "Common Stream";
+}
+
+function isCommonStream(stream) {
+  const normalized = normalizeValue(stream);
+  return !normalized || normalized === "common" || normalized === "common stream";
+}
+
+function matchesSelectedStream(courseStream, selectedStream) {
+  return isCommonStream(courseStream) || normalizeValue(courseStream) === normalizeValue(selectedStream);
+}
+
 function findHeaderIndex(headers, expectedName) {
   return headers.findIndex((header) => normalizeValue(header) === normalizeValue(expectedName));
 }
@@ -185,7 +198,7 @@ function renderResults(resultSet, query) {
             <div class="score-badge">+${course.margin.toFixed(3)}</div>
           </div>
           <div class="subject-list">
-            <span class="subject-pill">${escapeHtml(course.stream)}</span>
+            <span class="subject-pill">${escapeHtml(getDisplayStreamName(course.stream))}</span>
             <span class="subject-pill">${escapeHtml(query.district)}</span>
             <span class="subject-pill">Cutoff ${course.cutoff.toFixed(3)}</span>
             <span class="subject-pill">Your Score ${query.score.toFixed(3)}</span>
@@ -213,7 +226,7 @@ function runSearch() {
   }
 
   const rankedResults = courseRows
-    .filter((course) => normalizeValue(course.stream) === normalizeValue(selectedStream))
+    .filter((course) => matchesSelectedStream(course.stream, selectedStream))
     .map((course) => {
       const cutoff = course.districtCutoffs[selectedDistrict];
       const eligibility = getEligibilityStatus(score, cutoff);
