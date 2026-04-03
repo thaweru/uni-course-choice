@@ -2,6 +2,7 @@ const form = document.querySelector("#search-form");
 const scoreInput = document.querySelector("#score");
 const streamSelect = document.querySelector("#subject-stream");
 const districtSelect = document.querySelector("#district");
+const prioritizeSelectedStreamInput = document.querySelector("#prioritize-selected-stream");
 const resultsNode = document.querySelector("#results");
 const summaryNode = document.querySelector("#result-summary");
 const themeToggle = document.querySelector("#theme-toggle");
@@ -66,6 +67,10 @@ function isCommonStream(stream) {
 
 function matchesSelectedStream(courseStream, selectedStream) {
   return isCommonStream(courseStream) || normalizeValue(courseStream) === normalizeValue(selectedStream);
+}
+
+function isExactStreamMatch(courseStream, selectedStream) {
+  return normalizeValue(courseStream) === normalizeValue(selectedStream);
 }
 
 function findHeaderIndex(headers, expectedName) {
@@ -214,6 +219,7 @@ function runSearch() {
   const score = Number.parseFloat(scoreInput.value);
   const selectedStream = streamSelect.value;
   const selectedDistrict = districtSelect.value;
+  const prioritizeSelectedStream = prioritizeSelectedStreamInput.checked;
 
   if (!Number.isFinite(score) || !selectedStream || !selectedDistrict) {
     summaryNode.textContent = "Enter a score, stream, and district to search.";
@@ -230,16 +236,24 @@ function runSearch() {
     .map((course) => {
       const cutoff = course.districtCutoffs[selectedDistrict];
       const eligibility = getEligibilityStatus(score, cutoff);
+      const exactStreamMatch = isExactStreamMatch(course.stream, selectedStream);
 
       return {
         ...course,
         cutoff,
         margin: eligibility.difference,
-        isEligible: eligibility.isEligible
+        isEligible: eligibility.isEligible,
+        exactStreamMatch
       };
     })
     .filter((course) => Number.isFinite(course.cutoff) && course.isEligible)
-    .sort((left, right) => right.cutoff - left.cutoff || left.university.localeCompare(right.university));
+    .sort((left, right) => {
+      if (prioritizeSelectedStream && !isCommonStream(selectedStream) && left.exactStreamMatch !== right.exactStreamMatch) {
+        return left.exactStreamMatch ? -1 : 1;
+      }
+
+      return right.cutoff - left.cutoff || left.university.localeCompare(right.university);
+    });
 
   renderResults(rankedResults, {
     score,
@@ -292,6 +306,8 @@ themeMedia.addEventListener("change", (event) => {
 
   applyTheme(event.matches ? "dark" : "light", "system");
 });
+
+prioritizeSelectedStreamInput.addEventListener("change", runSearch);
 
 initializeTheme();
 initializeCourseData();

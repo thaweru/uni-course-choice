@@ -161,6 +161,23 @@ h2 {
   align-items: end;
 }
 
+.toggle-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 41px;
+  font-weight: normal;
+}
+
+.toggle-option input {
+  width: auto;
+  margin: 0;
+}
+
+.toggle-option span {
+  line-height: 1.4;
+}
+
 label {
   display: flex;
   flex-direction: column;

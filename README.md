@@ -50,6 +50,7 @@ The search form collects:
 - `score`
 - `subject stream`
 - `district`
+- optional ranking toggle for placing selected-stream courses above common-stream courses
 
 The app then:
 
@@ -58,6 +59,8 @@ The app then:
 3. Marks a course as eligible if `score >= district cutoff`.
 4. Removes ineligible rows.
 5. Sorts eligible rows by higher district cutoff first.
+
+If the ranking toggle is enabled and the selected stream is not `Common`/`Common Stream`, exact stream matches are shown before common-stream matches. Selecting `Common Stream` keeps the normal ranking by cutoff.
 
 This means the highest ranked result is the most competitive eligible program in the selected stream and district.
 
