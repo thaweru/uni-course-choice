@@ -8,6 +8,30 @@ const summaryNode = document.querySelector("#result-summary");
 const themeToggle = document.querySelector("#theme-toggle");
 const themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
+const cutoffDatasets = [
+  { year: "2025", path: "2025_cutoff.csv", isPrimary: true }
+];
+
+const courseCatalogPath = "cources.csv";
+const streamDefinitions = [
+  { label: "Art", catalogHeader: "Art Eligible", aliases: ["art"] },
+  { label: "Commerce", catalogHeader: "Commerce Eligible", aliases: ["commerce"] },
+  { label: "Biological Science", catalogHeader: "Biological Science Eligible", aliases: ["biological science", "bio sci"] },
+  { label: "Physical Science", catalogHeader: "Physical Science Eligible", aliases: ["physical science", "phy sci"] },
+  { label: "Engineering Technology", catalogHeader: "Engieneering Technology Eligible", aliases: ["engineering technology", "eng tech", "eng. tech."] },
+  { label: "Biosystems Technology", catalogHeader: "Biosystems Technology Eligible", aliases: ["biosystems technology", "bio tech", "bio tech."] }
+];
+const cutoffCourseAliases = {
+  "AGRI BUSINESS MANAGEMENT": "AGRIBUSINESS MANAGEMENT",
+  "ARTS": "ARTS INCLUDING ADDITIONAL INTAKE",
+  "ARTS SAB A": "ARTS SAB",
+  "ARTS SAB B": "ARTS SAB",
+  "INFORMATION COMMUNICATION TECHNOLOGY": "INFORMATION AND COMMUNICATION TECHNOLOGY ICT",
+  "MANAGEMENT STUDIES TV A": "MANAGEMENT STUDIES TV",
+  "MANAGEMENT STUDIES TV B": "MANAGEMENT STUDIES TV",
+  "MARINE AND FRESHWATER SCIENCES": "MARINE AND FRESH WATER SCIENCES"
+};
+
 let courseRows = [];
 let districtHeaders = [];
 
@@ -53,24 +77,21 @@ function escapeHtml(value) {
 }
 
 function normalizeValue(value) {
-  return value.trim().toLowerCase();
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeCourseName(value) {
+  const normalized = String(value || "")
+    .toUpperCase()
+    .replace(/&/g, " AND ")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+
+  return cutoffCourseAliases[normalized] || normalized;
 }
 
 function getDisplayStreamName(stream) {
-  return stream.trim() || "Common Stream";
-}
-
-function isCommonStream(stream) {
-  const normalized = normalizeValue(stream);
-  return !normalized || normalized === "common" || normalized === "common stream";
-}
-
-function matchesSelectedStream(courseStream, selectedStream) {
-  return isCommonStream(courseStream) || normalizeValue(courseStream) === normalizeValue(selectedStream);
-}
-
-function isExactStreamMatch(courseStream, selectedStream) {
-  return normalizeValue(courseStream) === normalizeValue(selectedStream);
+  return String(stream || "").trim() || "Common Stream";
 }
 
 function findHeaderIndex(headers, expectedName) {
@@ -109,11 +130,25 @@ function parseCsvLine(line) {
   return values;
 }
 
-function parseCourseTable(csvText) {
-  const lines = csvText
+function getLines(csvText) {
+  return csvText
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function fetchText(path) {
+  return fetch(path).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Failed to load ${path} (${response.status})`);
+    }
+
+    return response.text();
+  });
+}
+
+function parseCutoffTable(csvText, year) {
+  const lines = getLines(csvText);
 
   if (!lines.length) {
     return { rows: [], districts: [] };
@@ -141,9 +176,11 @@ function parseCourseTable(csvText) {
     });
 
     return {
+      year,
       stream: columns[streamIndex] || "",
       course: columns[courseIndex] || "",
       university: columns[universityIndex] || "",
+      normalizedCourseName: normalizeCourseName(columns[courseIndex]),
       districtCutoffs
     };
   });
@@ -151,8 +188,116 @@ function parseCourseTable(csvText) {
   return { rows, districts };
 }
 
+function getStreamLabelFromAlias(value) {
+  const normalizedValue = normalizeValue(value);
+
+  return streamDefinitions.find((streamDefinition) =>
+    streamDefinition.aliases.some((alias) => normalizeValue(alias) === normalizedValue)
+  )?.label || null;
+}
+
+function deriveEligibleStreamsFromCatalog(columns, headerIndexMap) {
+  const eligibleStreams = streamDefinitions
+    .filter((streamDefinition) => {
+      const columnIndex = headerIndexMap.get(normalizeValue(streamDefinition.catalogHeader));
+      return columnIndex !== undefined && normalizeValue(columns[columnIndex]) === "yes";
+    })
+    .map((streamDefinition) => streamDefinition.label);
+
+  return [...new Set(eligibleStreams)];
+}
+
+function deriveFallbackStreams(stream) {
+  const mainStreamLabel = getStreamLabelFromAlias(stream);
+
+  if (mainStreamLabel) {
+    return [mainStreamLabel];
+  }
+
+  const normalizedStream = normalizeValue(stream);
+  if (!normalizedStream) {
+    return [];
+  }
+
+  if (normalizedStream === "common" || normalizedStream === "common stream") {
+    return streamDefinitions.map((streamDefinition) => streamDefinition.label);
+  }
+
+  return [stream.trim()];
+}
+
+function getExactStreamLabels(stream) {
+  const mainStreamLabel = getStreamLabelFromAlias(stream);
+
+  return mainStreamLabel ? [mainStreamLabel] : [];
+}
+
+function parseCourseCatalog(csvText) {
+  const lines = getLines(csvText);
+  const headerLineIndex = lines.findIndex((line) => line.includes("Course Code") && line.includes("Course of Study"));
+
+  if (headerLineIndex < 0) {
+    return new Map();
+  }
+
+  const headers = parseCsvLine(lines[headerLineIndex]);
+  const headerIndexMap = new Map(headers.map((header, index) => [normalizeValue(header), index]));
+  const codeIndex = findHeaderIndex(headers, "Course Code");
+  const nameIndex = findHeaderIndex(headers, "Course of Study");
+  const streamIndex = findHeaderIndex(headers, "Stream");
+
+  if ([codeIndex, nameIndex, streamIndex].some((index) => index < 0)) {
+    return new Map();
+  }
+
+  const metadataByCourseName = new Map();
+
+  lines.slice(headerLineIndex + 1).forEach((line) => {
+    const columns = parseCsvLine(line);
+    const courseCode = columns[codeIndex] || "";
+
+    if (!/^\d+$/.test(courseCode)) {
+      return;
+    }
+
+    const courseName = columns[nameIndex] || "";
+    const mainStream = columns[streamIndex] || "";
+    const eligibleStreams = deriveEligibleStreamsFromCatalog(columns, headerIndexMap);
+    const normalizedCourseName = normalizeCourseName(courseName);
+    const existing = metadataByCourseName.get(normalizedCourseName);
+    const mergedEligibleStreams = new Set([...(existing?.eligibleStreams || []), ...eligibleStreams]);
+
+    metadataByCourseName.set(normalizedCourseName, {
+      courseName,
+      normalizedCourseName,
+      mainStream: existing?.mainStream || mainStream,
+      eligibleStreams: [...mergedEligibleStreams]
+    });
+  });
+
+  return metadataByCourseName;
+}
+
+function attachSearchMetadata(cutoffRows, courseCatalog) {
+  return cutoffRows.map((row) => {
+    const metadata = courseCatalog.get(row.normalizedCourseName);
+    const eligibleStreams = metadata?.eligibleStreams.length
+      ? metadata.eligibleStreams
+      : deriveFallbackStreams(metadata?.mainStream || row.stream);
+    const primaryStream = metadata?.mainStream || row.stream;
+    const exactStreamLabels = getExactStreamLabels(primaryStream);
+
+    return {
+      ...row,
+      eligibleStreams,
+      primaryStream,
+      exactStreamLabels
+    };
+  });
+}
+
 function populateFilters() {
-  const streamOptions = [...new Set(courseRows.map((row) => row.stream).filter(Boolean))]
+  const streamOptions = [...new Set(courseRows.flatMap((row) => row.eligibleStreams).filter(Boolean))]
     .sort((left, right) => left.localeCompare(right));
 
   streamSelect.innerHTML = streamOptions
@@ -203,9 +348,9 @@ function renderResults(resultSet, query) {
             <div class="score-badge">+${course.margin.toFixed(3)}</div>
           </div>
           <div class="subject-list">
-            <span class="subject-pill">${escapeHtml(getDisplayStreamName(course.stream))}</span>
+            <span class="subject-pill">${escapeHtml(getDisplayStreamName(course.primaryStream))}</span>
             <span class="subject-pill">${escapeHtml(query.district)}</span>
-            <span class="subject-pill">Cutoff ${course.cutoff.toFixed(3)}</span>
+            <span class="subject-pill">${escapeHtml(course.year)} cutoff ${course.cutoff.toFixed(3)}</span>
             <span class="subject-pill">Your Score ${query.score.toFixed(3)}</span>
           </div>
           <p class="result-meta">Eligible by ${course.margin.toFixed(3)} points above the district cutoff.</p>
@@ -232,11 +377,11 @@ function runSearch() {
   }
 
   const rankedResults = courseRows
-    .filter((course) => matchesSelectedStream(course.stream, selectedStream))
+    .filter((course) => course.eligibleStreams.some((stream) => normalizeValue(stream) === normalizeValue(selectedStream)))
     .map((course) => {
       const cutoff = course.districtCutoffs[selectedDistrict];
       const eligibility = getEligibilityStatus(score, cutoff);
-      const exactStreamMatch = isExactStreamMatch(course.stream, selectedStream);
+      const exactStreamMatch = course.exactStreamLabels.some((stream) => normalizeValue(stream) === normalizeValue(selectedStream));
 
       return {
         ...course,
@@ -248,7 +393,7 @@ function runSearch() {
     })
     .filter((course) => Number.isFinite(course.cutoff) && course.isEligible)
     .sort((left, right) => {
-      if (prioritizeSelectedStream && !isCommonStream(selectedStream) && left.exactStreamMatch !== right.exactStreamMatch) {
+      if (prioritizeSelectedStream && left.exactStreamMatch !== right.exactStreamMatch) {
         return left.exactStreamMatch ? -1 : 1;
       }
 
@@ -262,29 +407,60 @@ function runSearch() {
   });
 }
 
-function initializeCourseData() {
-  const csvText = typeof window.courseTableCsv === "string" ? window.courseTableCsv : "";
-  const parsedTable = parseCourseTable(csvText);
+function disableSearchForm() {
+  form.querySelector('button[type="submit"]').disabled = true;
+  streamSelect.disabled = true;
+  districtSelect.disabled = true;
+  scoreInput.disabled = true;
+  prioritizeSelectedStreamInput.disabled = true;
+}
 
-  courseRows = parsedTable.rows;
-  districtHeaders = parsedTable.districts;
+function showDataLoadError(message) {
+  summaryNode.textContent = "Course data could not be loaded.";
+  resultsNode.innerHTML = `
+    <div class="empty-state">
+      ${escapeHtml(message)}
+    </div>
+  `;
+  disableSearchForm();
+}
 
-  if (!courseRows.length || !districtHeaders.length) {
-    summaryNode.textContent = "Course data could not be loaded.";
-    resultsNode.innerHTML = `
-      <div class="empty-state">
-        The course table is missing or invalid. Check the separate data file and reload the page.
-      </div>
-    `;
-    form.querySelector('button[type="submit"]').disabled = true;
-    streamSelect.disabled = true;
-    districtSelect.disabled = true;
-    scoreInput.disabled = true;
-    return;
+async function initializeCourseData() {
+  summaryNode.textContent = "Loading course data...";
+  resultsNode.innerHTML = `
+    <div class="empty-state">
+      Loading course catalog and cutoff tables.
+    </div>
+  `;
+
+  try {
+    const [courseCatalogText, ...cutoffTexts] = await Promise.all([
+      fetchText(courseCatalogPath),
+      ...cutoffDatasets.map((dataset) => fetchText(dataset.path))
+    ]);
+
+    const courseCatalog = parseCourseCatalog(courseCatalogText);
+    const cutoffTables = cutoffTexts.map((csvText, index) => parseCutoffTable(csvText, cutoffDatasets[index].year));
+    const primaryCutoffIndex = cutoffDatasets.findIndex((dataset) => dataset.isPrimary);
+    const primaryCutoffTable = cutoffTables[primaryCutoffIndex >= 0 ? primaryCutoffIndex : 0];
+
+    courseRows = attachSearchMetadata(primaryCutoffTable.rows, courseCatalog);
+    districtHeaders = primaryCutoffTable.districts;
+
+    if (!courseRows.length || !districtHeaders.length) {
+      showDataLoadError("The CSV files are missing, invalid, or do not contain usable course data.");
+      return;
+    }
+
+    populateFilters();
+    runSearch();
+  } catch (error) {
+    const message = error instanceof Error
+      ? `${error.message}. If you opened the page directly from the file system, run it through a local static server so the browser can read the CSV files.`
+      : "The CSV files could not be loaded.";
+
+    showDataLoadError(message);
   }
-
-  populateFilters();
-  runSearch();
 }
 
 form.addEventListener("submit", (event) => {
